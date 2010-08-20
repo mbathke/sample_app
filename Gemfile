@@ -31,4 +31,11 @@ end
 
 group :test do
  gem 'rspec', '2.0.0.beta.18'
+ gem 'autotest', '4.3.2'
+ gem 'ZenTest'
+ gem 'redgreen'
+ gem 'test-unit', '2.1.1'
+ gem 'autotest-rails-pure'
+ gem 'autotest-growl'
+ gem 'spork', '0.8.4'
 end
