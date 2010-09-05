@@ -45,7 +45,7 @@ describe UsersController do
       get :new
       response.should have_selector("title", :content => "Sign up")
     end
-    
+
     it "should have a name field" do
       get :new
       response.should have_selector("input[name='user[name]'][type='text']")
@@ -253,10 +253,12 @@ describe UsersController do
 
       before(:each) do
         @user = test_sign_in(Factory(:user))
+        @admin = Factory(:user, :email => "admin@example.com",
+                                :admin => true)
         second = Factory(:user, :email => "another@example.com")
         third  = Factory(:user, :email => "another@example.net")
 
-        @users = [@user, second, third]
+        @users = [@user, @admin, second, third]
         30.times do
           @users << Factory(:user, :email => Factory.next(:email))
         end
@@ -279,13 +281,6 @@ describe UsersController do
         end
       end
 
-      it "should have an element for each user" do
-        get :index
-        @users[0..2].each do |user|
-          response.should have_selector("li", :content => user.name)
-        end
-      end
-
       it "should paginate users" do
         get :index
         response.should have_selector("div.pagination")
@@ -294,6 +289,28 @@ describe UsersController do
                                            :content => "2")
         response.should have_selector("a", :href => "/users?page=2",
                                            :content => "Next")
+      end
+
+      it "should not have a delete button" do
+        get :index
+        response.should_not have_selector("a", :content => "delete")
+      end
+
+      describe "with admin flag" do
+        before(:each) do
+          @user = test_sign_in(@admin)
+        end
+
+        it "should have a delete button" do
+          get :index
+          response.should have_selector("a", :content => "delete")
+        end
+
+        it "should not have a delete button for admin" do
+          get :index
+          response.should_not have_selector("a", :href => "/users/" + @user.id.to_s,
+                                                 :content => "delete")
+        end
       end
     end
   end
@@ -306,6 +323,7 @@ describe UsersController do
 
     describe "as a non-signed-in user" do
       it "should deny access" do
+
         delete :destroy, :id => @user
         response.should redirect_to(signin_path)
       end
@@ -322,8 +340,8 @@ describe UsersController do
     describe "as an admin user" do
 
       before(:each) do
-        admin = Factory(:user, :email => "admin@example.com", :admin => true)
-        test_sign_in(admin)
+        @admin = Factory(:user, :email => "admin@example.com", :admin => true)
+        test_sign_in(@admin)
       end
 
       it "should destroy the user" do
@@ -335,6 +353,12 @@ describe UsersController do
       it "should redirect to the users page" do
         delete :destroy, :id => @user
         response.should redirect_to(users_path)
+      end
+
+      it "should not delete admin itself" do
+        lambda do
+          delete :destroy, :id => @admin
+        end.should_not change(User, :count)
       end
     end
   end
